@@ -1,14 +1,25 @@
-/**
-Express에서 정적파일 다루기..
-
-*/
-
 var express = require('express');
 var app = express();
 
 app.use(express.static('public'));
 app.get('/', function (req, res) {
   res.send('Hello World!');
+});
+
+app.get('/dynamic', function (req, res) {
+	var data = `
+	<!DOCTYPE html>
+	<html>
+		<head>
+			<meta charset="utf-8">
+			<title></title>
+		</head>
+	<body>
+		Hello, Dynamic!
+	</body>	
+	</html>`;
+
+	res.send(data);
 });
 
 app.get('/route', function (req, res){
