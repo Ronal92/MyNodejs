@@ -11,27 +11,27 @@ app.set('views', './views');
 app.use(express.static('public'));
 
 
-app.get('/topics/:id', function (req, res){
-// app.get('/topics', function (req, res){
+//app.get('/topics/:id', function (req, res){
+ app.get('/topics', function (req, res){
 	var topic = [
 		'JavaScript',
 		'NodeJs',
 		'Web'
 	];
 
-	var output = `
-	<a href="/topics/0">JavaScript</a><br>
-	<a href="/topics/1">NodeJs</a><br>
-	<a href="/topics/2">Web</a><br>
-	${topic[req.params.id]}
-	`
-
 	// var output = `
-	// <a href="/topics?id=0">JavaScript</a><br>
-	// <a href="/topics?id=1">NodeJs</a><br>
-	// <a href="/topics?id=2">Web</a><br>
-	// ${topic[req.query.id]}
+	// <a href="/topics/0">JavaScript</a><br>
+	// <a href="/topics/1">NodeJs</a><br>
+	// <a href="/topics/2">Web</a><br>
+	// ${topic[req.params.id]}
 	// `
+
+	var output = `
+	<a href="/topics?id=0">JavaScript</a><br>
+	<a href="/topics?id=1">NodeJs</a><br>
+	<a href="/topics?id=2">Web</a><br>
+	${topic[req.query.id]}
+	`
 	res.send(output);
 })
 
