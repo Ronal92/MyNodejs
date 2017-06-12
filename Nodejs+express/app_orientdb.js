@@ -1,7 +1,8 @@
 /**
 	파일이 아닌 데이터베이스(OrientDB)를 이용해서
-	웹 애플리케이션에서 조회를 구현해본다.
-	escaping : url에서 에러를 방지하기 위해 특수문자를 다른걸로 치환하는 거.(view.jade)
+	웹 애플리케이션에서 추가와 수정을 구현한다.
+	
+	
 
 */
 
@@ -23,6 +24,7 @@ var app = express();  // express()은 애플리케이션 객체를 리턴한다.
 app.set('views', './views_orientdb');
 app.set('view engine', 'jade');
 app.use(bodyParser.urlencoded({ extended: false })); // bodyparser가 req에 body값을 준다.
+app.locals.pretty = true;		
 var OrientDB = require('orientjs');
 var server = OrientDB({
    host:       'localhost',
@@ -56,44 +58,95 @@ app.post('/upload', upload.single('userfile'), function (req, res){
 
 
 /*
-	파일 생성하는 form을 제공한다.
+	각 토픽에 대한 정보를 가져온다.
 */
-app.get('/topic/new', function (req, res){
-	
-	fs.readdir('data', function(err, files){
-		if(err){
-			console.log(err);
-			res.status(500).send('Internal Server Error');
-		}
-		res.render('new-dev', {topics:files}); // files를 topics에 담아서 전송!
+app.get('/topic/add', function (req, res){
+	var sql = 'SELECT * FROM topic';
+	db.query(sql).then(function(results){
+		res.render('add', {topics:results}); // files를 topics에 담아서 전송!
+	});
+});
 
+/*
+	topic을 추가하는 곳
+*/
+app.post('/topic/add', function (req, res){
+	var title = req.body.title;
+	var description = req.body.description;
+	var author = req.body.author;
+	var sql = "INSERT INTO topic (title, description, author) VALUES(:title, :description, :author)";
+
+	db.query(sql, {
+		params:{
+			title:title,
+			description:description,
+			author:author
+		}
+	}).then(function(results){
+		res.redirect('/topic/' + encodeURIComponent(results[0]['@rid']));
+	})
+
+});
+
+/*
+	각 토픽 정보를 수정한다.
+*/
+app.get('/topic/:id/edit', function (req, res){
+	console.log(":id/edit");
+	var sql = 'SELECT * FROM topic';
+	var id = req.params.id;
+	db.query(sql).then(function(results){
+		var sql = 'SELECT FROM topic WHERE @rid=:rid';
+		db.query(sql, {params:{rid:id}}).then(function(topic){
+		res.render('edit', {topics:results, topic:topic[0]});
+		});
+	});
+});
+
+/*
+	각 토픽 정보를 수정하는 곳
+*/
+app.post('/topic/:id/add', function (req, res){
+	var sql = 'UPDATE topic SET title=:t, description=:d, author=:a WHERE @rid=:rid';
+	var id = req.params.id;
+	var title = req.body.title;
+	var description = req.body.description;
+	var author = req.body.author;
+	db.query(sql,{
+		params:{
+			t:title,
+			d:description,
+			a:author
+		}
+	}).then(function(results){
+		res.redirect('/topic/'+encodeURIComponent(id));
 	});
 });
 
 /*
 	첫 화면
 */
-app.get(['/topic', '/topic/:id'], function(req, res){
+app.get(['/topic', '/topic/:id'], function (req, res){
 	var sql = 'SELECT * FROM topic';
 	db.query(sql).then(function(results){
-		res.render('view', {topics:results});
-	});
-});
-
-/*
-	파일이 생성되는 곳
-*/
-app.post('/topic', function (req, res){
-	var title = req.body.title;
-	var content = req.body.content;
-
-	fs.writeFile('data/'+title, content, function(err){
-		if(err){
-			res.status(500).send('Internal Server Error');
+		var sql = 'SELECT FROM topic WHERE @rid=:rid';
+		var id = req.params.id;
+		if(id){
+			db.query(sql, {params:{rid:id}}).then(function(topic){
+			res.render('view', {topics:results, topic:topic[0]});
+			});
+		} else {
+			res.render('view', {topics:results});
 		}
-		res.redirect('/topic/'+title);
+
 	});
 });
+
+
+
+
+
+
 
 app.listen(3000, function(){
 	console.log("Server is working");
