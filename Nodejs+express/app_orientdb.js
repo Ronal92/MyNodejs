@@ -1,6 +1,6 @@
 /**
 	파일이 아닌 데이터베이스(OrientDB)를 이용해서
-	웹 애플리케이션에서 추가와 수정을 구현한다.
+	웹 애플리케이션에서 마지막 삭제를 구현한다.
 	
 	
 
@@ -38,27 +38,12 @@ username: 'root',
 password: '111'
 });
 
-/*
-	사용자가 /user/sample1.png를 누르면 해당 사진을 uploads에서 가져와서 보여준다.
-*/
-app.use('/user', express.static('uploads'))
-/*
-	파일을 업로드하는 곳
-*/
-app.get('/upload', function (req, res) {
-	res.render('uploadForm');
-});
-/*
-	전송된 파일을 /upload 디렉토리에 저장하는 곳
-*/
-app.post('/upload', upload.single('userfile'), function (req, res){
-	console.log(req.file);
-	res.send('Upload');
-});
+
+
 
 
 /*
-	각 토픽에 대한 정보를 가져온다.
+	@ADD : 각 토픽에 대한 정보를 가져온다.
 */
 app.get('/topic/add', function (req, res){
 	var sql = 'SELECT * FROM topic';
@@ -68,7 +53,7 @@ app.get('/topic/add', function (req, res){
 });
 
 /*
-	topic을 추가하는 곳
+	@ADD : DB에 토픽을 추가한다.(INSERT)
 */
 app.post('/topic/add', function (req, res){
 	var title = req.body.title;
@@ -89,10 +74,41 @@ app.post('/topic/add', function (req, res){
 });
 
 /*
-	각 토픽 정보를 수정한다.
+	@Delete : 삭제할 토픽을 요청한다.
+*/
+app.get('/topic/:id/delete', function (req, res){
+	console.log(":id/delete");
+	var sql = 'SELECT * FROM topic';
+	var id = req.params.id;
+	db.query(sql).then(function(results){
+		var sql = 'SELECT FROM topic WHERE @rid=:rid';
+		db.query(sql, {params:{rid:id}}).then(function(topic){
+		res.render('delete', {topics:results, topic:topic[0]});
+		});
+	});
+});
+
+/*
+	@Delete : DB의 토픽을 삭제한다.
+*/
+app.post('/topic/:id/delete', function (req, res){
+	var sql = "DELETE VERTEX FROM topic WHERE @rid=:rid";
+	var id=req.params.id;
+	db.query(sql, {
+		params:{
+			rid:id
+		}
+	}).then(function(results){
+		res.redirect('/topic/');
+	})
+
+});
+
+/*
+	@UPDATE : 수정할 토픽을 요청한다.
 */
 app.get('/topic/:id/edit', function (req, res){
-	console.log(":id/edit");
+	console.log(":id/edit GET");
 	var sql = 'SELECT * FROM topic';
 	var id = req.params.id;
 	db.query(sql).then(function(results){
@@ -104,9 +120,11 @@ app.get('/topic/:id/edit', function (req, res){
 });
 
 /*
-	각 토픽 정보를 수정하는 곳
+	@UPDATE : 수정된 토픽을 DB에 업데이트 한다.
 */
-app.post('/topic/:id/add', function (req, res){
+app.post('/topic/:id/edit', function (req, res){
+	console.log(":id/edit POST");
+
 	var sql = 'UPDATE topic SET title=:t, description=:d, author=:a WHERE @rid=:rid';
 	var id = req.params.id;
 	var title = req.body.title;
@@ -116,9 +134,11 @@ app.post('/topic/:id/add', function (req, res){
 		params:{
 			t:title,
 			d:description,
-			a:author
+			a:author,
+			rid:id
 		}
 	}).then(function(results){
+		console.log(results);
 		res.redirect('/topic/'+encodeURIComponent(id));
 	});
 });
